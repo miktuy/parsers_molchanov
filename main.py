@@ -1,54 +1,53 @@
-import requests
 import csv
-from bs4 import BeautifulSoup
 from dataclasses import dataclass
+from typing import Iterable
+
+import requests
+from bs4 import BeautifulSoup
+
+
+COINMARKET_URL = "https://coinmarketcap.com/"
 
 
 @dataclass
-class Plugin:
+class CoinRow(Iterable):
     name: str
+    ticker: str
     url: str
-    rating: int
+    price: float
 
     def __iter__(self):
-        return iter((self.name, self.url, self.rating))
+        return iter((self.name, self.ticker, self.url, self.price))
 
 
 def get_html(url: str) -> str:
-    r = requests.get(url)
-    return r.text
+    return requests.get(url).text
 
 
-def refined(row_string: str) -> int:
-    r = row_string.split()[0].replace(",", "")
-    return int(r)
-
-
-def write_csv(data: Plugin):
-    with open("plugins.csv", "a") as f:
+def write_csv(data: CoinRow):
+    with open("cmc.csv", "a") as f:
         writer = csv.writer(f)
         writer.writerow(data)
 
 
-def get_data(html: str):
+def get_page_data(html: str):
     soup = BeautifulSoup(html, "lxml")
-    popular = soup.find_all("section")[1]
-    plugins = popular.find_all("article")
-
-    for plugin in plugins:
-        name = plugin.find("h3").text
-        url = plugin.find("h3").find("a").get("href")
-        rating_string = plugin.find("span", class_="rating-count").find("a").text
-        rating = refined(rating_string)
-        data = Plugin(name, url, rating)
-        write_csv(data)
-
-    return None
+    trs = soup.find_all("table")[2].find("tbody").find_all("tr")
+    for tr in trs:
+        tds = tr.find_all("td")
+        if len(tds) > 1:
+            name = tds[1].find("a").text
+            ticker = tds[5].find("div").text.split(" ")[1]
+            url = COINMARKET_URL + tds[1].find("a").get("href")
+            price = float(tds[3].find("a").text.replace("$", "").replace(",", ""))
+            crypto = CoinRow(name, ticker, url, price)
+            print(crypto)
+            write_csv(crypto)
 
 
 def main():
-    url = "https://wordpress.org/plugins/"
-    print(get_data(get_html(url)))
+    url = COINMARKET_URL
+    print(get_page_data(get_html(url=url)))
 
 
 if __name__ == "__main__":
