@@ -1,6 +1,6 @@
 import csv
 from dataclasses import dataclass
-from typing import Iterable
+from typing import Iterable, Optional
 
 import requests
 from bs4 import BeautifulSoup
@@ -14,7 +14,7 @@ class CoinRow(Iterable):
     name: str
     ticker: str
     url: str
-    price: float
+    price: Optional[float]
 
     def __iter__(self):
         return iter((self.name, self.ticker, self.url, self.price))
