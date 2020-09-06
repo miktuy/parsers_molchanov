@@ -28,6 +28,5 @@ def main():
             print(dict(row))
 
 
-
 if __name__ == "__main__":
     main()
